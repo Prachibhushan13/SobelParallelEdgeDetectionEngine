@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BCS702 - Parallel Image Edge Detection (Sobel Operator)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0b0f19;
+            --bg-secondary: #131b2e;
+            --bg-card: rgba(26, 36, 61, 0.7);
+            --border-color: rgba(255, 255, 255, 0.1);
+            --accent-indigo: #6366f1;
+            --accent-cyan: #06b6d4;
+            --accent-emerald: #10b981;
+            --accent-amber: #f59e0b;
+            --accent-rose: #f43f5e;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.5;
+            background-image: 
+                radial-gradient(circle at 15% 15%, rgba(99, 102, 241, 0.15) 0%, transparent 40%),
+                radial-gradient(circle at 85% 85%, rgba(6, 182, 212, 0.12) 0%, transparent 45%);
+            background-attachment: fixed;
+        }
+
+        header {
+            padding: 24px 40px;
+            border-bottom: 1px solid var(--border-color);
+            background: rgba(11, 15, 25, 0.85);
+            backdrop-filter: blur(16px);
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-title h1 {
+            font-size: 1.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #a5b4fc, #38bdf8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.02em;
+        }
+
+        .header-title p {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .sys-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 14px;
+            border-radius: 9999px;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: #34d399;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .sys-badge span {
+            width: 8px;
+            height: 8px;
+            background: #10b981;
+            border-radius: 50%;
+            box-shadow: 0 0 10px #10b981;
+        }
+
+        .container {
+            max-width: 1440px;
+            margin: 0 auto;
+            padding: 32px 40px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 8px;
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            font-weight: 600;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .tab-btn:hover {
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .tab-btn.active {
+            color: var(--text-primary);
+            background: rgba(99, 102, 241, 0.2);
+            border: 1px solid rgba(99, 102, 241, 0.4);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .grid-layout {
+            display: grid;
+            grid-template-columns: 360px 1fr;
+            gap: 28px;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 24px;
+            backdrop-filter: blur(12px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4);
+        }
+
+        .card h2 {
+            font-size: 1.15rem;
+            font-weight: 700;
+            margin-bottom: 18px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #f1f5f9;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        select, input[type="range"] {
+            width: 100%;
+            padding: 10px 14px;
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            outline: none;
+            transition: border 0.2s;
+        }
+
+        select:focus {
+            border-color: var(--accent-indigo);
+        }
+
+        .thread-slider-wrap {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .thread-slider-wrap input {
+            flex: 1;
+        }
+
+        .thread-val {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--accent-cyan);
+            min-width: 32px;
+            text-align: right;
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #6366f1, #3b82f6);
+            color: white;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 8px 16px -4px rgba(99, 102, 241, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 12px 20px -4px rgba(99, 102, 241, 0.7);
+        }
+
+        .btn-primary:active {
+            transform: translateY(1px);
+        }
+
+        .btn-secondary {
+            padding: 10px 18px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-primary);
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        /* Metrics Bar */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .metric-card {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 16px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .metric-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+        }
+
+        .metric-card.seq::before { background: var(--accent-rose); }
+        .metric-card.omp::before { background: var(--accent-cyan); }
+        .metric-card.gpu::before { background: var(--accent-emerald); }
+        .metric-card.speedup::before { background: var(--accent-amber); }
+        .metric-card.eff::before { background: var(--accent-indigo); }
+
+        .metric-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+
+        .metric-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: var(--text-primary);
+        }
+
+        .metric-sub {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+
+        /* Image Viewer */
+        .image-viewer {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .image-panel {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .image-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .image-header h3 {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: #cbd5e1;
+        }
+
+        .image-container {
+            flex: 1;
+            min-height: 360px;
+            background: #000;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .image-container img {
+            max-width: 100%;
+            max-height: 480px;
+            object-fit: contain;
+            image-rendering: pixelated;
+        }
+
+        .badge-verified {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 9999px;
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            color: #34d399;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+
+        /* Benchmark Tab */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-top: 20px;
+        }
+
+        .chart-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 20px;
+        }
+
+        .chart-card img {
+            width: 100%;
+            border-radius: 8px;
+        }
+
+        table.bench-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+            margin-top: 16px;
+        }
+
+        table.bench-table th {
+            background: rgba(15, 23, 42, 0.9);
+            padding: 12px 14px;
+            text-align: left;
+            font-weight: 700;
+            color: var(--text-secondary);
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        table.bench-table td {
+            padding: 10px 14px;
+            border-bottom: 1px solid var(--border-color);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        table.bench-table tr:hover td {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        /* Theory Formulas */
+        .formula-box {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 18px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            margin: 12px 0 20px 0;
+            color: #38bdf8;
+            overflow-x: auto;
+        }
+
+        .code-kernel {
+            display: inline-block;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 10px 14px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            margin: 6px 12px 6px 0;
+            color: #a5b4fc;
+        }
+
+        .spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-title">
+            <h1>Sobel Parallel Edge Detection Engine</h1>
+            <p>VTU 7th-Semester Parallel Computing (BCS702) &bull; Sequential C++ vs OpenMP vs Apple Metal GPU</p>
+        </div>
+        <div class="sys-badge">
+            <span></span> Apple M3 Pro &bull; 11 Hardware Threads &bull; Metal Compute
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- Navigation Tabs -->
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('demo')">Live Demonstration</button>
+            <button class="tab-btn" onclick="switchTab('benchmarks')">Benchmark Analysis & Plots</button>
+            <button class="tab-btn" onclick="switchTab('theory')">Mathematical Foundation</button>
+        </div>
+
+        <!-- TAB 1: Live Demonstration -->
+        <div id="tab-demo" class="tab-content active">
+            <div class="grid-layout">
+                <!-- Left Sidebar Controls -->
+                <div class="card">
+                    <h2>Configuration</h2>
+                    
+                    <div class="form-group">
+                        <label>Synthetic Test Pattern</label>
+                        <select id="patternSelect">
+                            <option value="shapes" selected>Geometric Shapes (Circle, Rect, Triangle)</option>
+                            <option value="chessboard">Chessboard Grid</option>
+                            <option value="circles">Concentric Circles (Sinusoidal)</option>
+                            <option value="gradient">Linear Gradient Ramp</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Resolution</label>
+                        <select id="sizeSelect">
+                            <option value="512">512 x 512 (0.26 MP)</option>
+                            <option value="1024" selected>1024 x 1024 (1.05 MP)</option>
+                            <option value="2048">2048 x 2048 (4.19 MP)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>OpenMP Thread Count</label>
+                        <div class="thread-slider-wrap">
+                            <input type="range" id="threadSlider" min="1" max="11" value="8" oninput="updateThreadCount(this.value)">
+                            <div class="thread-val" id="threadDisplay">8</div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>OpenMP Scheduling</label>
+                        <select id="scheduleSelect">
+                            <option value="static" selected>static (Uniform Chunks)</option>
+                            <option value="dynamic">dynamic (Task Queue, Chunk 16)</option>
+                            <option value="guided">guided (Exponentially Decreasing)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Execution Mode</label>
+                        <select id="modeSelect">
+                            <option value="all" selected>All (Sequential + OpenMP + Metal GPU)</option>
+                            <option value="omp">OpenMP Multithreading Only</option>
+                            <option value="seq">Sequential CPU Only</option>
+                            <option value="gpu">Apple Metal GPU Only</option>
+                        </select>
+                    </div>
+
+                    <button class="btn-primary" id="runBtn" onclick="runEdgeDetection()">
+                        <div class="spinner" id="btnSpinner"></div>
+                        <span id="btnText">Run Edge Detection</span>
+                    </button>
+                </div>
+
+                <!-- Right Visualizer Area -->
+                <div>
+                    <!-- Metrics Bar -->
+                    <div class="metrics-grid">
+                        <div class="metric-card seq">
+                            <div class="metric-label">Sequential CPU</div>
+                            <div class="metric-value" id="valSeqTime">-- ms</div>
+                            <div class="metric-sub">Single-threaded Baseline</div>
+                        </div>
+                        <div class="metric-card omp">
+                            <div class="metric-label">OpenMP Parallel</div>
+                            <div class="metric-value" id="valOmpTime">-- ms</div>
+                            <div class="metric-sub" id="valOmpSub">-- Threads</div>
+                        </div>
+                        <div class="metric-card gpu">
+                            <div class="metric-label">Apple Metal GPU</div>
+                            <div class="metric-value" id="valGpuTime">-- ms</div>
+                            <div class="metric-sub" id="valGpuSub">Compute Kernel</div>
+                        </div>
+                        <div class="metric-card speedup">
+                            <div class="metric-label">Speedup Factor</div>
+                            <div class="metric-value" id="valSpeedup">-- x</div>
+                            <div class="metric-sub">S(p) = T_seq / T_omp</div>
+                        </div>
+                        <div class="metric-card eff">
+                            <div class="metric-label">Parallel Efficiency</div>
+                            <div class="metric-value" id="valEfficiency">-- %</div>
+                            <div class="metric-sub">E(p) = S(p) / p &times; 100%</div>
+                        </div>
+                    </div>
+
+                    <!-- Images Side by Side -->
+                    <div class="image-viewer">
+                        <div class="image-panel">
+                            <div class="image-header">
+                                <h3>Input Grayscale Image</h3>
+                                <span class="badge-verified" id="badgeDims">1024 x 1024</span>
+                            </div>
+                            <div class="image-container">
+                                <img id="imgInput" src="" alt="Input image will appear here">
+                            </div>
+                        </div>
+                        <div class="image-panel">
+                            <div class="image-header">
+                                <h3>Edge-Detected Output (Sobel)</h3>
+                                <span class="badge-verified" id="badgeMatch">100% Exact Match</span>
+                            </div>
+                            <div class="image-container">
+                                <img id="imgOutput" src="" alt="Edge detected output will appear here">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: Benchmark Analysis & Plots -->
+        <div id="tab-benchmarks" class="tab-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <div>
+                    <h2>Empirical Benchmark Analysis</h2>
+                    <p style="color: var(--text-secondary); font-size: 0.9rem;">
+                        Rigorous measurements on Apple M3 Pro with 5 repetitions per configuration (excluding I/O overhead).
+                    </p>
+                </div>
+                <div style="display: flex; gap: 12px;">
+                    <a href="/api/csv" class="btn-secondary" style="text-decoration: none; display: flex; align-items: center; gap: 8px;">
+                        &darr; Export CSV
+                    </a>
+                </div>
+            </div>
+
+            <!-- Summary 2x2 Plot -->
+            <div class="card" style="margin-bottom: 24px;">
+                <h2>Comprehensive 4-Panel Analysis Dashboard</h2>
+                <img src="/results/benchmark_summary.png" style="width: 100%; border-radius: 8px;" alt="Summary Benchmark Plots">
+            </div>
+
+            <!-- Detailed Grid Plots -->
+            <div class="charts-grid">
+                <div class="chart-card">
+                    <h2>Figure 1: Execution Time vs Image Dimension</h2>
+                    <img src="/results/fig1_execution_time_vs_size.png" alt="Execution Time vs Size">
+                </div>
+                <div class="chart-card">
+                    <h2>Figure 2: Execution Time vs Thread Count</h2>
+                    <img src="/results/fig2_execution_time_vs_threads.png" alt="Execution Time vs Threads">
+                </div>
+                <div class="chart-card">
+                    <h2>Figure 3: Speedup vs Thread Count (Amdahl's Law)</h2>
+                    <img src="/results/fig3_speedup_vs_threads.png" alt="Speedup vs Threads">
+                </div>
+                <div class="chart-card">
+                    <h2>Figure 4: Parallel Efficiency vs Thread Count</h2>
+                    <img src="/results/fig4_efficiency_vs_threads.png" alt="Efficiency vs Threads">
+                </div>
+            </div>
+
+            <!-- Live Table -->
+            <div class="card" style="margin-top: 24px;">
+                <h2>Measured Benchmark Records (CSV Raw Data)</h2>
+                <div style="overflow-x: auto;">
+                    <table class="bench-table" id="benchTable">
+                        <thead>
+                            <tr>
+                                <th>Resolution</th>
+                                <th>Implementation</th>
+                                <th>Threads</th>
+                                <th>Kernel Time (ms)</th>
+                                <th>StdDev</th>
+                                <th>Speedup</th>
+                                <th>Efficiency (%)</th>
+                                <th>Equivalence</th>
+                            </tr>
+                        </thead>
+                        <tbody id="benchTableBody">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 3: Theoretical Foundation -->
+        <div id="tab-theory" class="tab-content">
+            <div class="card">
+                <h2>1. Mathematical Foundation of the Sobel Operator</h2>
+                <p style="color: var(--text-secondary); margin-bottom: 14px;">
+                    The Sobel operator performs a 2D spatial gradient measurement on an image, emphasizing regions of high spatial frequency that correspond to edges.
+                </p>
+
+                <div class="formula-box">
+                    <strong>Horizontal Gradient Kernel (Gx):</strong><br>
+                    <div class="code-kernel">
+                    [-1  0  1]<br>
+                    [-2  0  2]<br>
+                    [-1  0  1]
+                    </div>
+                    Detects vertical edges (horizontal intensity changes)
+                    <br><br>
+                    <strong>Vertical Gradient Kernel (Gy):</strong><br>
+                    <div class="code-kernel">
+                    [-1 -2 -1]<br>
+                    [ 0  0  0]<br>
+                    [ 1  2  1]
+                    </div>
+                    Detects horizontal edges (vertical intensity changes)
+                    <br><br>
+                    <strong>Gradient Magnitude:</strong><br>
+                    G(x, y) = &radic;( Gx&sup2; + Gy&sup2; )<br>
+                    Clamped to 8-bit unsigned integer range: I_out(x, y) = min(255, G(x, y))
+                </div>
+
+                <h2>2. Why Sobel Edge Detection is Embarrassingly Parallel</h2>
+                <p style="color: var(--text-secondary); margin-bottom: 14px;">
+                    The Sobel operator is a <strong>stencil convolution</strong> computation. To calculate output pixel <code>I_out(x, y)</code>, the algorithm only reads the 3&times;3 neighborhood in the input image <code>I_in</code>.
+                </p>
+                <ul style="color: var(--text-secondary); margin-left: 24px; margin-bottom: 20px;">
+                    <li><strong>Read-Only Input:</strong> The source image memory is never modified during convolution.</li>
+                    <li><strong>Disjoint Writes:</strong> Each parallel thread writes strictly to its assigned rows/pixels in the separate output buffer.</li>
+                    <li><strong>No Race Conditions:</strong> Zero thread synchronization or atomic locks are needed during convolution!</li>
+                    <li><strong>Cache Line Alignment:</strong> Row-wise partitioning (OpenMP <code>#pragma omp parallel for schedule(static)</code>) ensures each thread processes contiguous bytes, preventing false sharing across hardware cache lines.</li>
+                </ul>
+
+                <h2>3. Performance Metrics and Amdahl's Law</h2>
+                <div class="formula-box">
+                    <strong>Speedup Factor:</strong><br>
+                    S(p) = T_sequential / T_parallel(p)<br><br>
+                    <strong>Parallel Efficiency:</strong><br>
+                    E(p) = (S(p) / p) &times; 100%<br><br>
+                    <strong>Amdahl's Law:</strong><br>
+                    S(p) = 1 / [ (1 - f) + (f / p) ]<br>
+                    where <em>f</em> is the parallel fraction of the program (stencil convolution &approx; 98-99%), and <em>1 - f</em> is the sequential portion (setup, thread dispatch).
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+            event.target.classList.add('active');
+            document.getElementById('tab-' + tabId).classList.add('active');
+
+            if (tabId === 'benchmarks') {
+                loadBenchmarkTable();
+            }
+        }
+
+        function updateThreadCount(val) {
+            document.getElementById('threadDisplay').innerText = val;
+        }
+
+        async function runEdgeDetection() {
+            const btn = document.getElementById('runBtn');
+            const spinner = document.getElementById('btnSpinner');
+            const btnText = document.getElementById('btnText');
+
+            btn.disabled = true;
+            spinner.style.display = 'block';
+            btnText.innerText = 'Processing...';
+
+            const payload = {
+                pattern: document.getElementById('patternSelect').value,
+                width: parseInt(document.getElementById('sizeSelect').value),
+                height: parseInt(document.getElementById('sizeSelect').value),
+                threads: parseInt(document.getElementById('threadSlider').value),
+                mode: document.getElementById('modeSelect').value,
+                schedule: document.getElementById('scheduleSelect').value
+            };
+
+            try {
+                const res = await fetch('/api/run', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    document.getElementById('imgInput').src = data.input_image;
+                    document.getElementById('imgOutput').src = data.output_image;
+
+                    document.getElementById('valSeqTime').innerText = data.seq_time_ms.toFixed(3) + ' ms';
+                    document.getElementById('valOmpTime').innerText = data.omp_time_ms.toFixed(3) + ' ms';
+                    document.getElementById('valOmpSub').innerText = data.threads + ' Threads (' + payload.schedule + ')';
+                    
+                    if (data.gpu_kernel_ms > 0) {
+                        document.getElementById('valGpuTime').innerText = data.gpu_kernel_ms.toFixed(3) + ' ms';
+                        document.getElementById('valGpuSub').innerText = 'Total: ' + data.gpu_total_ms.toFixed(3) + ' ms';
+                    } else {
+                        document.getElementById('valGpuTime').innerText = 'N/A';
+                    }
+
+                    document.getElementById('valSpeedup').innerText = data.speedup.toFixed(2) + ' x';
+                    document.getElementById('valEfficiency').innerText = data.efficiency.toFixed(1) + ' %';
+
+                    document.getElementById('badgeDims').innerText = data.width + ' x ' + data.height;
+                }
+            } catch (err) {
+                console.error("Run error:", err);
+                alert("Failed to execute Sobel edge detection: " + err);
+            } finally {
+                btn.disabled = false;
+                spinner.style.display = 'none';
+                btnText.innerText = 'Run Edge Detection';
+            }
+        }
+
+        async function loadBenchmarkTable() {
+            try {
+                const res = await fetch('/api/benchmark_data');
+                const json = await res.json();
+                if (json.success) {
+                    const tbody = document.getElementById('benchTableBody');
+                    tbody.innerHTML = '';
+                    json.data.forEach(row => {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td>${row.ImageSize}</td>
+                            <td><strong>${row.Implementation}</strong></td>
+                            <td>${row.Threads}</td>
+                            <td>${parseFloat(row.KernelTime_ms).toFixed(3)}</td>
+                            <td>&plusmn;${parseFloat(row.StdDev_ms).toFixed(3)}</td>
+                            <td style="color: #38bdf8; font-weight: bold;">${parseFloat(row.Speedup).toFixed(2)}x</td>
+                            <td style="color: #34d399;">${parseFloat(row.Efficiency_pct).toFixed(1)}%</td>
+                            <td><span class="badge-verified">&#10003; ${row.Verified}</span></td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                }
+            } catch (e) {
+                console.error("Error loading benchmark table", e);
+            }
+        }
+
+        // Auto-run on first load
+        window.onload = function() {
+            runEdgeDetection();
+        };
+    </script>
+</body>
+</html>

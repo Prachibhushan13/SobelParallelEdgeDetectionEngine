@@ -1,0 +1,38 @@
+# Compiled Object Files and Libraries
+*.o
+*.a
+*.so
+*.dylib
+*.dSYM/
+
+# Build Directories
+build/
+bin/
+build_cmake/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+
+# macOS System Files
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Python Cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.ipynb_checkpoints
+
+# Temporary generated web files
+images/web_input_*
+output/web_edges_*
+images/demo*.pgm
+output/edges_demo*.pgm
+output/edges_shapes*.pgm
+
+# Local IDE and scratch directories
+.vscode/
+.idea/
+.gemini/
+scratch/
